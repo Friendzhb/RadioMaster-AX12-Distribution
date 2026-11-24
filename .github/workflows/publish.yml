@@ -1,0 +1,43 @@
+name: Publish verified AX12 APK
+on:
+  push:
+    branches: ['delivery/**']
+permissions:
+  contents: write
+concurrency:
+  group: ax12-ota-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository_id == '1469585404'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: channel
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: shipment
+          lfs: true
+          persist-credentials: false
+      - name: Verify the signed APK and update the OTA channel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y xdelta3
+          python3 channel/.github/publish_apk.py shipment/delivery
+      - name: Remove the completed transfer branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF_NAME" =~ ^delivery/[0-9]+-[0-9]+$ ]]
+          ref="repos/$GITHUB_REPOSITORY/git/ref/heads/$GITHUB_REF_NAME"
+          if [[ "$(gh api "$ref" --jq .object.sha)" == "$GITHUB_SHA" ]]; then
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$GITHUB_REF_NAME"
+          fi
