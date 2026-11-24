@@ -38,8 +38,7 @@ def get_ota(release):
 def verify(apk, info):
     if apk.stat().st_size != info['bytes'] or digest(apk) != info['sha256']:
         raise ValueError('APK contents do not match the approved build')
-    tools = Path(os.environ['ANDROID_HOME']) / 'build-tools'
-    sdk = max((d for d in tools.iterdir() if re.fullmatch(r'\d+\.\d+\.\d+', d.name)), key=lambda d: tuple(map(int, d.name.split('.'))))
+    sdk = Path(os.environ['ANDROID_HOME']) / 'build-tools' / '34.0.0'
     certs = subprocess.check_output([sdk/'apksigner', 'verify', '--print-certs', apk], text=True)
     if re.findall(r'^Signer #\d+ certificate SHA-256 digest: ([0-9a-f]+)$', certs, re.M) != [SIGNER]:
         raise ValueError('APK is not signed with the AX12 update certificate')

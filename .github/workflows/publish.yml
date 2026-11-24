@@ -30,6 +30,9 @@ jobs:
         run: |
           sudo apt-get -qq update
           sudo apt-get -qq install -y xdelta3
+          if [[ ! -x "$ANDROID_HOME/build-tools/34.0.0/apksigner" ]]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;34.0.0"
+          fi
           python3 channel/.github/publish_apk.py shipment/delivery
       - name: Remove the completed transfer branch
         env:
